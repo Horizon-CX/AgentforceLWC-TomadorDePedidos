@@ -1,0 +1,187 @@
+<template>
+    <div class="component-root">
+
+        <!-- ── ESTADO: Configuración incompleta ────────────────────────────
+             Se muestra si el componente se ha invocado sin Id del pedido.    -->
+        <template lwc:if={showMissingConfig}>
+            <div class="state-card state-card_error">
+                <lightning-icon icon-name="utility:error" size="small" variant="error" class="state-icon"></lightning-icon>
+                <span class="state-text">{labels.ErrorMissingConfig}</span>
+            </div>
+        </template>
+
+        <!-- ── ESTADO: Acción completada con éxito ─────────────────────────
+             Tras "Finalizar pedido" (Confirm) o "Guardar cambios" (Modify),
+             el componente desaparece y deja solo esta tarjeta verde.        -->
+        <template lwc:if={showFinalizedCard}>
+            <div class="state-card state-card_success">
+                <lightning-icon icon-name="utility:success" size="small" variant="success" class="state-icon"></lightning-icon>
+                <span class="state-text">{finalizedMessage}</span>
+            </div>
+        </template>
+
+        <!-- ── ESTADO: Vista activa del resumen ────────────────────────────
+             Cabecera + meta + lista de líneas + total + acciones.            -->
+        <template lwc:if={showActiveLayout}>
+            <div class="panel">
+
+                <!-- Cabecera con icono grande, título y nº de pedido -->
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <lightning-icon icon-name="standard:orders" size="medium" class="title-icon"></lightning-icon>
+                        <span class="title-text">{labels.CardTitle}</span>
+                    </div>
+                    <template lwc:if={orderNumber}>
+                        <span class="order-badge">{labels.OrderLabel} #{orderNumber}</span>
+                    </template>
+                </div>
+
+                <!-- Meta del pedido: cliente y tarifa -->
+                <template lwc:if={accountName}>
+                    <div class="meta-row">
+                        <span class="meta-label">{labels.AccountLabel}:</span>
+                        <span class="meta-value">{accountName}</span>
+                    </div>
+                </template>
+                <template lwc:if={pricebookLine}>
+                    <div class="meta-row">
+                        <span class="meta-label">{pricebookLine}</span>
+                    </div>
+                </template>
+
+                <!-- Spinner de carga inicial -->
+                <template lwc:if={_loading}>
+                    <div class="loading-row">
+                        <lightning-spinner alternative-text="Cargando pedido…" size="small"></lightning-spinner>
+                        <span class="loading-text">Cargando pedido…</span>
+                    </div>
+                </template>
+
+                <!-- Error global de carga / guardado -->
+                <template lwc:if={_errorMessage}>
+                    <div class="inline-error" role="alert">{_errorMessage}</div>
+                </template>
+
+                <!-- Pedido sin líneas (cliente abre el resumen vacío) -->
+                <template lwc:if={showEmptyMessage}>
+                    <p class="empty-message">{labels.EmptyOrder}</p>
+                </template>
+
+                <!-- Lista de líneas del pedido -->
+                <template lwc:if={showItemList}>
+                    <ul class="item-list">
+                        <template for:each={displayItems} for:item="item">
+                            <li key={item.orderItemId} class={item.cardClass}>
+
+                                <!-- Imagen del producto / icono fallback -->
+                                <div class="item-media">
+                                    <template lwc:if={item.showImage}>
+                                        <img
+                                            src={item.imageUrl}
+                                            alt={item.productName}
+                                            class={item.imageClass}
+                                            data-id={item.orderItemId}
+                                            data-product2id={item.product2Id}
+                                            data-image-url={item.imageUrl}
+                                            onerror={handleImageError}
+                                            onclick={handleImageClick}
+                                        />
+                                    </template>
+                                    <template lwc:if={item.showFallbackIcon}>
+                                        <span
+                                            class={item.iconClass}
+                                            data-product2id={item.product2Id}
+                                            data-image-url={item.imageUrl}
+                                            onclick={handleImageClick}
+                                        >
+                                            <lightning-icon icon-name={item.iconName} size="small"></lightning-icon>
+                                        </span>
+                                    </template>
+                                </div>
+
+                                <!-- Info del producto -->
+                                <div class="item-info">
+                                    <div class="item-name">{item.productName}</div>
+                                    <template lwc:if={item.productCode}>
+                                        <div class="item-code">{item.productCode}</div>
+                                    </template>
+                                    <div class="item-unit-price">{item.unitPriceLabel} / ud.</div>
+                                </div>
+
+                                <!-- Controles de cantidad: stepper + total de la línea -->
+                                <div class="item-controls">
+                                    <div class="qty-stepper">
+                                        <button
+                                            type="button"
+                                            class="stepper-btn"
+                                            data-id={item.orderItemId}
+                                            onclick={handleDecrement}
+                                            disabled={actionButtonDisabled}
+                                            aria-label="Reducir cantidad"
+                                        >−</button>
+                                        <input
+                                            type="number"
+                                            class="qty-input"
+                                            min="0"
+                                            max="999"
+                                            step="1"
+                                            value={item.quantity}
+                                            data-id={item.orderItemId}
+                                            oninput={handleQuantityChange}
+                                            disabled={actionButtonDisabled}
+                                            aria-label="Cantidad"
+                                        />
+                                        <button
+                                            type="button"
+                                            class="stepper-btn"
+                                            data-id={item.orderItemId}
+                                            onclick={handleIncrement}
+                                            disabled={actionButtonDisabled}
+                                            aria-label="Aumentar cantidad"
+                                        >+</button>
+                                    </div>
+                                    <div class="item-total">{item.totalPriceLabel}</div>
+                                </div>
+
+                            </li>
+                        </template>
+                    </ul>
+
+                    <!-- Total del pedido -->
+                    <div class="total-row">
+                        <span class="total-label">{labels.TotalLabel}</span>
+                        <span class="total-amount">{totalAmount}</span>
+                    </div>
+                </template>
+
+                <!--
+                    Acciones inferiores: botones HTML nativos para garantizar
+                    width:100% real (lightning-button no se estira limpiamente).
+                    Ambos modos muestran el botón secundario "Quiero añadir más
+                    productos" por si el usuario quiere ampliar el pedido a última
+                    hora antes de finalizarlo o tras guardar modificaciones.
+                -->
+                <div class="action-row">
+                    <button
+                        type="button"
+                        class="action-btn-native action-btn-native_brand"
+                        disabled={actionButtonDisabled}
+                        onclick={handleAction}
+                    >{actionButtonLabel}</button>
+
+                    <button
+                        type="button"
+                        class="action-btn-native"
+                        disabled={actionButtonDisabled}
+                        onclick={handleAddMore}
+                    >
+                        <span>{labels.AddMoreButton}</span>
+                        <lightning-icon icon-name="utility:cart" size="x-small" class="action-btn-icon"></lightning-icon>
+                    </button>
+                </div>
+
+            </div>
+        </template>
+
+    </div>
+</template>

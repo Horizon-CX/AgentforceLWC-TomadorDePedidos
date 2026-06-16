@@ -1,0 +1,353 @@
+/*
+ * orderSummaryAgentforce.css
+ *
+ * Estilos del LWC que muestra el resumen del pedido en el chat de Agentforce.
+ * Sigue la misma filosofía visual que el LWC addOrderItemAgentforce:
+ *   – Panel con esquinas redondeadas y sombra suave.
+ *   – Cabecera con icono grande "standard:orders" + número de pedido.
+ *   – Lista de líneas con imagen, info, stepper de cantidad y total por línea.
+ *   – Acciones inferiores en columna, ocupando todo el ancho de la tarjeta.
+ *
+ * La paleta de azules es la estándar de Salesforce (#0070d2). Los textos en
+ * gris débil reutilizan la variable --lwc-colorTextWeak cuando está disponible.
+ */
+
+:host {
+    display: block;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* ── Panel contenedor ───────────────────────────────────────────────────── */
+.panel {
+    background: var(--lwc-colorBackgroundAlt, #ffffff);
+    border: 1px solid var(--lwc-colorBorder, #dddbda);
+    border-radius: 1.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+/* ── Cabecera ────────────────────────────────────────────────────────────── */
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem 0.5rem;
+    border-bottom: 1px solid var(--lwc-colorBorder, #e5e5e4);
+    background: var(--lwc-colorBackgroundAlt, #fafaf9);
+}
+
+.panel-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: var(--lwc-fontWeightBold, 700);
+    font-size: 0.9375rem;
+    color: var(--lwc-colorTextDefault, #080707);
+}
+
+.title-icon { flex-shrink: 0; }
+
+.order-badge {
+    font-size: 0.75rem;
+    color: var(--lwc-colorTextWeak, #706e6b);
+}
+
+/* ── Meta del pedido (cliente, tarifa) ──────────────────────────────────── */
+.meta-row {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.25rem 1rem 0;
+    font-size: 0.75rem;
+    color: var(--lwc-colorTextWeak, #706e6b);
+}
+
+.meta-label { font-weight: var(--lwc-fontWeightBold, 700); }
+.meta-value { flex: 1; }
+
+/* ── Estados: loading / empty / error ───────────────────────────────────── */
+.loading-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    font-size: 0.8125rem;
+    color: var(--lwc-colorTextWeak, #706e6b);
+}
+
+.loading-text { font-size: 0.8125rem; }
+
+.empty-message {
+    padding: 1rem;
+    font-size: 0.8125rem;
+    color: var(--lwc-colorTextWeak, #706e6b);
+}
+
+.inline-error {
+    margin: 0.75rem 1rem;
+    padding: 0.5rem 0.75rem;
+    background: #fef1ee;
+    border-left: 3px solid #ea001e;
+    border-radius: 0.25rem;
+    font-size: 0.8125rem;
+    color: #ba0517;
+}
+
+/* ── Lista de líneas del pedido ─────────────────────────────────────────── */
+.item-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem 0 0;
+}
+
+.item-card {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    column-gap: 0.625rem;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--lwc-colorBorder, #e5e5e4);
+}
+
+.item-card:last-child { border-bottom: none; }
+
+/*
+ * Línea con cantidad = 0 → el usuario quiere eliminarla al guardar.
+ * Le aplicamos un estilo "tachado" para que se vea claramente que va a
+ * desaparecer cuando confirme. La eliminación real la hace Apex.
+ */
+.item-card_to-delete {
+    opacity: 0.55;
+    background: var(--lwc-colorBackground, #f3f2f2);
+}
+
+.item-card_to-delete .item-name,
+.item-card_to-delete .item-code,
+.item-card_to-delete .item-unit-price,
+.item-card_to-delete .item-total {
+    text-decoration: line-through;
+}
+
+/* Imagen / icono del producto */
+.item-media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.item-image {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    border: 1px solid var(--lwc-colorBorder, #e5e5e4);
+}
+
+.item-image_clickable { cursor: pointer; }
+.item-image_clickable:hover { opacity: 0.8; }
+
+.item-image-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--lwc-colorBackground, #f3f2f2);
+    border-radius: 0.25rem;
+    border: 1px solid var(--lwc-colorBorder, #e5e5e4);
+}
+
+/* Info del producto */
+.item-info { min-width: 0; }
+
+.item-name {
+    font-size: 0.8125rem;
+    font-weight: var(--lwc-fontWeightBold, 700);
+    color: var(--lwc-colorTextDefault, #080707);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-code {
+    font-size: 0.6875rem;
+    color: var(--lwc-colorTextWeak, #706e6b);
+}
+
+.item-unit-price {
+    font-size: 0.6875rem;
+    color: var(--lwc-colorTextWeak, #706e6b);
+    margin-top: 0.125rem;
+}
+
+/* Controles de cantidad (stepper + total de la línea) */
+.item-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.qty-stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--lwc-colorBorder, #dddbda);
+    border-radius: 0.375rem;
+    overflow: hidden;
+    background: var(--lwc-colorBackgroundInput, #ffffff);
+}
+
+.stepper-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1;
+    border: none;
+    background: var(--lwc-colorBackgroundAlt, #ffffff);
+    color: var(--lwc-colorTextDefault, #3e3e3c);
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+
+.stepper-btn:hover:not(:disabled) {
+    background: var(--lwc-colorBackground, #f3f2f2);
+}
+
+.stepper-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.qty-input {
+    width: 2.5rem;
+    padding: 0.1875rem 0.25rem;
+    font-size: 0.8125rem;
+    text-align: center;
+    border: none;
+    border-left: 1px solid var(--lwc-colorBorder, #e5e5e4);
+    border-right: 1px solid var(--lwc-colorBorder, #e5e5e4);
+    background: transparent;
+    color: var(--lwc-colorTextDefault, #080707);
+    -moz-appearance: textfield;
+}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.qty-input:disabled {
+    background: var(--lwc-colorBackground, #f3f2f2);
+    color: var(--lwc-colorTextWeak, #706e6b);
+    cursor: not-allowed;
+}
+
+.item-total {
+    font-size: 0.8125rem;
+    font-weight: var(--lwc-fontWeightBold, 700);
+    color: #0070d2;
+    white-space: nowrap;
+}
+
+/* ── Total del pedido ───────────────────────────────────────────────────── */
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.625rem 1rem;
+    border-top: 2px solid var(--lwc-colorBorder, #e5e5e4);
+    background: var(--lwc-colorBackgroundAlt, #fafaf9);
+}
+
+.total-label {
+    font-size: 0.875rem;
+    font-weight: var(--lwc-fontWeightBold, 700);
+    color: var(--lwc-colorTextDefault, #080707);
+}
+
+.total-amount {
+    font-size: 1rem;
+    font-weight: var(--lwc-fontWeightBold, 700);
+    color: #0070d2;
+}
+
+/*
+ * ── Acciones inferiores ─────────────────────────────────────────────────
+ * Los botones se apilan en columna y ocupan todo el ancho de la tarjeta.
+ * Usamos <button> nativo (NO <lightning-button>) porque lightning-button
+ * vive en shadow DOM y no respeta limpiamente width:100% desde fuera.
+ */
+.action-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 1rem;
+    border-top: 1px solid var(--lwc-colorBorder, #e5e5e4);
+}
+
+.action-btn-native {
+    width: 100%;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: var(--lwc-fontWeightBold, 700);
+    border: 1px solid #0070d2;
+    border-radius: 0.375rem;
+    background: #ffffff;
+    color: #0070d2;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.action-btn-native:hover:not(:disabled) {
+    background: #f0f7fd;
+}
+
+.action-btn-native:active:not(:disabled) { transform: translateY(1px); }
+
+.action-btn-native:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Variante brand (fondo azul Salesforce) para la acción principal */
+.action-btn-native_brand {
+    background: #0070d2;
+    color: #ffffff;
+}
+
+.action-btn-native_brand:hover:not(:disabled) {
+    background: #005fb2;
+}
+
+/* ── Estados finales (éxito tras acción / error de configuración) ───────── */
+.state-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+}
+
+.state-card_success {
+    background: #ecfdf5;
+    border: 1px solid #4bca81;
+    color: #027e46;
+}
+
+.state-card_error {
+    background: #fef1ee;
+    border: 1px solid #ea001e;
+    color: #ba0517;
+}
+
+.state-icon { flex-shrink: 0; }
+.state-text { line-height: 1.4; }

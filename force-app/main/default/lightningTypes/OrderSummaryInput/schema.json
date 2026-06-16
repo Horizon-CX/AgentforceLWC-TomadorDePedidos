@@ -1,0 +1,5 @@
+{
+  "description" : "Agentforce",
+  "lightning:type" : "@apexClassType/c__OrderSummaryInput",
+  "title" : "OrderSummaryInput"
+}

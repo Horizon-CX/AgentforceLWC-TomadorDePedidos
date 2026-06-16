@@ -1,0 +1,234 @@
+<template>
+    <div class="component-root">
+
+        <!-- ── ESTADO: Configuración incompleta ─────────────────────────── -->
+        <template lwc:if={showMissingConfig}>
+            <div class="state-card state-card_error">
+                <lightning-icon icon-name="utility:error" size="small" variant="error" class="state-icon"></lightning-icon>
+                <span class="state-text">{labels.ErrorMissingConfig}</span>
+            </div>
+        </template>
+
+        <!-- ── ESTADO: Activo ───────────────────────────────────────────── -->
+        <template lwc:if={showActiveLayout}>
+            <div class="panel">
+
+                <!-- Cabecera con título y nombre del pricebook -->
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <lightning-icon icon-name="standard:product" size="medium" class="title-icon"></lightning-icon>
+                        <span class="title-text">{labels.CardTitle}</span>
+                    </div>
+                    <template lwc:if={pricebookLine}>
+                        <span class="pricebook-badge">{pricebookLine}</span>
+                    </template>
+                </div>
+
+                <!-- Skeleton de carga (en lugar del spinner) -->
+                <template lwc:if={showSkeleton}>
+                    <ul class="product-list product-list_skeleton" aria-busy="true" aria-label={labels.SearchingMessage}>
+                        <template for:each={skeletonItems} for:item="sk">
+                            <li key={sk.key} class="product-card-skeleton">
+                                <div class="sk-media"></div>
+                                <div class="sk-info">
+                                    <div class="sk-line sk-line_lg"></div>
+                                    <div class="sk-line sk-line_sm"></div>
+                                    <div class="sk-line sk-line_xs"></div>
+                                </div>
+                                <div class="sk-price"></div>
+                                <div class="sk-controls">
+                                    <div class="sk-stepper"></div>
+                                    <div class="sk-button"></div>
+                                </div>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+
+                <!-- Error global de búsqueda -->
+                <template lwc:if={_errorMessage}>
+                    <div class="inline-error" role="alert">{_errorMessage}</div>
+                </template>
+
+                <!-- Sin resultados -->
+                <template lwc:if={showEmptyMessage}>
+                    <p class="empty-message">{labels.NoResultsMessage}</p>
+                </template>
+
+                <!-- Pedido no editable (no está en Draft) -->
+                <template lwc:if={showNotEditableMessage}>
+                    <div class="not-editable" role="alert">
+                        <lightning-icon icon-name="utility:info" size="x-small" class="not-editable-icon"></lightning-icon>
+                        <span class="not-editable-text">{notEditableMessage}</span>
+                    </div>
+                </template>
+
+                <!-- Lista de tarjetas de producto -->
+                <template lwc:if={showProductList}>
+                    <ul class="product-list">
+                        <template for:each={displayProducts} for:item="prod">
+                            <li key={prod.pricebookEntryId} class={prod.cardClass}>
+
+                                <!-- Fila 1: imagen + info + precio -->
+                                <div class="product-row-top">
+
+                                    <!-- Imagen o icono fallback -->
+                                    <div class="product-media">
+                                        <template lwc:if={prod.showImage}>
+                                            <img
+                                                src={prod.imageUrl}
+                                                alt={prod.productName}
+                                                class={prod.imageClass}
+                                                data-id={prod.pricebookEntryId}
+                                                data-product2id={prod.product2Id}
+                                                data-image-url={prod.imageUrl}
+                                                onerror={handleImageError}
+                                                onclick={handleImageClick}
+                                            />
+                                        </template>
+                                        <template lwc:if={prod.showFallbackIcon}>
+                                            <span
+                                                class={prod.iconClass}
+                                                data-product2id={prod.product2Id}
+                                                data-image-url={prod.imageUrl}
+                                                onclick={handleImageClick}
+                                            >
+                                                <lightning-icon icon-name={prod.iconName} size="small"></lightning-icon>
+                                            </span>
+                                        </template>
+                                    </div>
+
+                                    <!-- Info: nombre (hasta 2 líneas), código, badges -->
+                                    <div class="product-info">
+                                        <div class="product-name">{prod.productName}</div>
+                                        <template lwc:if={prod.productCode}>
+                                            <div class="product-code">{prod.productCode}</div>
+                                        </template>
+                                        <div class="product-badges">
+                                            <template lwc:if={prod.family}>
+                                                <span class="product-family-badge">{prod.family}</span>
+                                            </template>
+                                            <span class={prod.stockBadgeClass}>
+                                                <span class="stock-dot"></span>{prod.stockLabel}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Precio + (subtotal si quantity > 1) -->
+                                    <div class="product-price-block">
+                                        <div class="product-price">{prod.unitPriceLabel}<span class="product-price-unit"> / ud.</span></div>
+                                        <template lwc:if={prod.showSubtotal}>
+                                            <div class="product-subtotal">
+                                                <span class="product-subtotal-label">{labels.SubtotalLabel}</span>
+                                                <span class="product-subtotal-value">{prod.subtotalLabel}</span>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                </div>
+
+                                <!-- Fila 2: stepper + botón añadir (en línea, no apilados) -->
+                                <div class="product-row-bottom">
+                                    <div class="qty-stepper">
+                                        <button
+                                            type="button"
+                                            class="stepper-btn"
+                                            data-id={prod.pricebookEntryId}
+                                            onclick={handleDecrement}
+                                            disabled={prod.addButtonDisabled}
+                                            aria-label="Reducir cantidad"
+                                        >−</button>
+                                        <input
+                                            type="number"
+                                            class="qty-input"
+                                            min="1"
+                                            max="999"
+                                            step="1"
+                                            value={prod.quantity}
+                                            data-id={prod.pricebookEntryId}
+                                            oninput={handleQuantityChange}
+                                            disabled={prod.addButtonDisabled}
+                                            aria-label={labels.QuantityLabel}
+                                        />
+                                        <button
+                                            type="button"
+                                            class="stepper-btn"
+                                            data-id={prod.pricebookEntryId}
+                                            onclick={handleIncrement}
+                                            disabled={prod.addButtonDisabled}
+                                            aria-label="Aumentar cantidad"
+                                        >+</button>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class={prod.addButtonClass}
+                                        data-id={prod.pricebookEntryId}
+                                        onclick={handleAddProduct}
+                                        disabled={prod.addButtonDisabled}
+                                    >
+                                        <template lwc:if={prod.adding}>
+                                            <lightning-spinner size="x-small" alternative-text={labels.AddingButton} class="btn-spinner"></lightning-spinner>
+                                        </template>
+                                        <span class="add-btn-label">{prod.addButtonLabel}</span>
+                                    </button>
+                                </div>
+
+                                <!-- Error por producto individual -->
+                                <template lwc:if={prod.error}>
+                                    <div class="product-error" role="alert">{prod.error}</div>
+                                </template>
+
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+
+                <!-- Toasts inline "+N producto añadido a tu pedido" -->
+                <template lwc:if={hasToasts}>
+                    <div class="toast-stack" aria-live="polite">
+                        <template for:each={_toasts} for:item="toast">
+                            <div key={toast.id} class="toast">
+                                <lightning-icon icon-name="utility:success" size="x-small" variant="success" class="toast-icon"></lightning-icon>
+                                <span class="toast-text">{toast.message}</span>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Total parcial del pedido (sticky inferior) -->
+                <template lwc:if={showOrderTotal}>
+                    <div class="order-total-bar">
+                        <span class="order-total-label">{labels.OrderTotalLabel}</span>
+                        <span class="order-total-amount">{orderTotalLabel}</span>
+                    </div>
+                </template>
+
+                <!-- Acciones finales — solo en Embedded Messaging (chat del cliente) -->
+                <template lwc:if={showEmbeddedChatActions}>
+                    <div class="action-row">
+                        <button type="button" class="action-btn-native action-btn-native_brand" onclick={handleAddMore}>
+                            <lightning-icon icon-name="utility:search" size="x-small" variant="inverse" class="action-btn-icon action-btn-icon_brand"></lightning-icon>
+                            <span>{labels.SearchAnotherButton}</span>
+                        </button>
+                        <button type="button" class="action-btn-native" onclick={handleFinish}>
+                            {labels.FinishButton}
+                        </button>
+                        <button type="button" class="action-btn-native" onclick={handleHavingIssues}>
+                            {labels.HavingIssuesButton}
+                        </button>
+                    </div>
+                </template>
+
+                <!-- Panel de instrucciones — solo en Employee/Agent Desktop -->
+                <template lwc:if={showEmployeePanel}>
+                    <div class="employee-panel" role="region">
+                        <lightning-icon icon-name="utility:chat" size="small" class="employee-icon"></lightning-icon>
+                        <p class="employee-text">{labels.EmployeeInstruction}</p>
+                    </div>
+                </template>
+
+            </div>
+        </template>
+
+    </div>
+</template>
