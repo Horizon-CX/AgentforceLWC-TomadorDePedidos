@@ -1,18 +1,53 @@
-# Salesforce DX Project: Next Steps
+# Tomador de Pedidos — Agentforce LWC
 
-Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
+LWC listo para usar como **Tomador de Pedidos** en Agentforce. Permite que el agente muestre una UI conversacional para añadir productos a un pedido y ver el resumen antes de confirmarlo.
 
-## How Do You Plan to Deploy Your Changes?
+[![Deploy to Salesforce](https://raw.githubusercontent.com/afawcett/githubsfdeploy/master/deploy.png)](https://githubsfdeploy.herokuapp.com/?owner=Horizon-CX&repo=AgentforceLWC-TomadorDePedidos&ref=master)
 
-Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
+---
 
-## Configure Your Salesforce DX Project
+## Componentes incluidos
 
-The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
+### Lightning Web Components (3)
 
-## Read All About It
+| Componente | Descripción |
+|---|---|
+| `addOrderItemAgentforce` | UI para que el agente añada productos al pedido |
+| `orderSummaryAgentforce` | UI para ver el resumen y confirmar el pedido |
+| `orderBuilder` | Construcción de mensajes de chat (sin Apex) |
 
-- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
-- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
+### Lightning Types (2)
+
+Vinculan las Invocable Actions de Agentforce con los LWC que las renderizan.
+
+| API Name | LWC que renderiza |
+|---|---|
+| `AddOrderItem` | `addOrderItemAgentforce` |
+| `OrderSummaryInput` | `orderSummaryAgentforce` |
+
+### Apex Classes (6)
+
+| Clase | Tipo | Depende de |
+|---|---|---|
+| `AddOrderItemAgentforceController` | Controller del LWC | — |
+| `OrderSummaryController` | Controller del LWC | — |
+| `AddOrderItemInput` | Input wrapper | — |
+| `OrderSummaryInput` | Input wrapper | — |
+| `AddOrderItemAgentforceAction` | Invocable Action | `AddOrderItemInput` |
+| `OrderSummaryAgentforceAction` | Invocable Action | `OrderSummaryInput` |
+
+---
+
+## Instalación manual (SFDX)
+
+```bash
+sf org login web -a myOrg
+sf project deploy start --source-dir force-app -o myOrg
+```
+
+---
+
+## Requisitos
+
+- Salesforce org con **Agentforce** habilitado
+- API version **62.0** o superior
